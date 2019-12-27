@@ -1,0 +1,3 @@
+const md = "# Express Boilerplate!\n\nThis is a boilerplate project used for starting new projects!\n\n\n## Scripts\n\nStart the application `npm start`\n\nStart nodemon for the application `npm run dev`\n\nRun the tests `npm test`\n\n## Deploying\n\nWhen your new project is ready for deployment, add a new Heroku application with `heroku create`. This will make a new git remote called \"heroku\" and you can then `npm run deploy` which will push to this remote's master branch."
+
+module.exports = md
