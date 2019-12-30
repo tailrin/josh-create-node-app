@@ -48,33 +48,22 @@ const runBashCommand = async (cmd) =>{
 }
 
 const createApp = async (gitRepo) => { 
-        countdown.start();
         createDir(name);
-        countdown.message(progressBar.update(0.083))
         createDir(`${name}/src`);
-        countdown.message(progressBar.update(0.166))
         createDir(`${name}/test`);
-        countdown.message(progressBar.update(0.25))
         writeFile(`./${name}/src/app.js`, app);
-        countdown.message(progressBar.update(0.333))
         writeFile(`./${name}/src/server.js`, server);
-        countdown.message(progressBar.update(0.416))
         writeFile(`./${name}/test/app.spec.js`, spec);
-        countdown.message(progressBar.update(0.50))
         writeFile(`./${name}/test/setup.js`, setup);
-        countdown.message(progressBar.update(0.583))
         writeFile(`./${name}/.env`, env);
-        countdown.message(progressBar.update(0.666))
         writeFile(`./${name}/.gitignore`, ignore);
-        countdown.message(progressBar.update(0.75))
         writeFile(`./${name}/package.json`, pack);
-        countdown.message(progressBar.update(0.833))
         writeFile(`./${name}/Procfile`, proc);
-        countdown.message(progressBar.update(0.916))
         writeFile(`./${name}/README.md`, md);
-        countdown.message(progressBar.update(0.100))
-        countdown.message('All files and folders created initializing repostories and installing dependancies')
+        countdown.message(progressBar.update(0.05))
+
         const cmd =[`npm i`, `git init`, `git add .`, `git commit -m "initial commit"`]
+        countdown.message(progressBar.update(0.083))
         runBashCommand(cmd[0])
         if(gitRepo){
           cmd.push(`git remote add origin ${gitUrl[0]}`);
