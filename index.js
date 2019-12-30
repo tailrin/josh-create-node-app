@@ -2,6 +2,7 @@
 
 const exec = require('child_process').exec;
 const fs = require('fs');
+const clui = require('clui');
 const app = require('./srcFiles/app');
 const spec = require('./srcFiles/app.spec');
 const env = require('./srcFiles/env');
@@ -13,7 +14,10 @@ const setup = require('./srcFiles/setup');
 const name = process.argv[2];
 const gitUrl = [];
 const readline = require('readline');
-
+const Progress = clui.Progress;
+const Spinner = clui.Spinner;
+let progressBar = new Progress(20)
+let countdown = new Spinner(progressBar.update(0.0), ['◜','◠','◝','◞','◡','◟']);
 const pack = `{\n  "name": "${name}",\n  "version": "1.0.0",\n  "description": "",\n  "main": "index.js",\n  "scripts": {\n    "test": "mocha --require test/setup.js",\n    "dev": "nodemon src/server.js",\n    "start": "node src/server.js",\n    "predeploy": "npm audit",\n    "deploy": "git push heroku master"\n  },\n  "keywords": [],\n  "author": "",\n  "license": "ISC",\n  "dependencies": {\n    "cors": "^2.8.5",\n    "dotenv": "^8.2.0",\n    "express": "^4.17.1",\n    "helmet": "^3.21.2",\n    "morgan": "^1.9.1"\n  },\n  "devDependencies": {\n    "chai": "^4.2.0",\n    "mocha": "^6.2.2",\n    "nodemon": "^2.0.2",\n    "supertest": "^4.0.2"\n  }\n}\n`;
 
 const writeFile = (path, content) => {
@@ -28,37 +32,64 @@ const createDir = (dir) => {
     }
 }
 
-const createApp = (gitRepo) => {
-    return new Promise((res, rej) => {   
+
+const runBashCommand = async (cmd) =>{
+  cmd = `cd ${name} && ${cmd}`
+  return new Promise((resolve, reject) => {
+    exec(`${cmd}`, function(err,stdout, stderr){
+      console.log('stdout: ' + stdout);
+      console.log('stderr: ' + stderr);
+      if (!!err) {
+        console.log('exec error: ' + err);
+      }
+      resolve()
+    });
+  });
+}
+
+const createApp = async (gitRepo) => { 
+        countdown.start();
         createDir(name);
+        countdown.message(progressBar.update(0.083))
         createDir(`${name}/src`);
+        countdown.message(progressBar.update(0.166))
         createDir(`${name}/test`);
+        countdown.message(progressBar.update(0.25))
         writeFile(`./${name}/src/app.js`, app);
+        countdown.message(progressBar.update(0.333))
         writeFile(`./${name}/src/server.js`, server);
+        countdown.message(progressBar.update(0.416))
         writeFile(`./${name}/test/app.spec.js`, spec);
+        countdown.message(progressBar.update(0.50))
         writeFile(`./${name}/test/setup.js`, setup);
+        countdown.message(progressBar.update(0.583))
         writeFile(`./${name}/.env`, env);
+        countdown.message(progressBar.update(0.666))
         writeFile(`./${name}/.gitignore`, ignore);
+        countdown.message(progressBar.update(0.75))
         writeFile(`./${name}/package.json`, pack);
+        countdown.message(progressBar.update(0.833))
         writeFile(`./${name}/Procfile`, proc);
+        countdown.message(progressBar.update(0.916))
         writeFile(`./${name}/README.md`, md);
-
-        const cmd =[`cd ${name}`, `git init`, `npm i`, `git add .`, `git commit -m "initial commit"`]
+        countdown.message(progressBar.update(0.100))
+        countdown.message('All files and folders created initializing repostories and installing dependancies')
+        const cmd =[`npm i`, `git init`, `git add .`, `git commit -m "initial commit"`]
+        runBashCommand(cmd[0])
         if(gitRepo){
-            cmd.push(`git remote add origin ${gitUrl[0]}`)
-            cmd.push('git push -u origin master')
+          cmd.push(`git remote add origin ${gitUrl[0]}`);
+          cmd.push('git push -u origin master')
+          runBashCommand(cmd[1])
+          .then(() => runBashCommand(cmd[2]))
+          .then(() => runBashCommand(cmd[3]))
+          .then(() => runBashCommand(cmd[4]))
+          .then(() => runBashCommand(cmd[5]))
+        } else {
+          runBashCommand(cmd[1])
+          .then(() => runBashCommand(cmd[2]))
+          .then(() => runBashCommand(cmd[3]))
         }
-        const child = exec(`${cmd.join(' && ')}`, function(err,stdout, stderr){
-            console.log('stdout: ' + stdout);
-            console.log('stderr: ' + stderr);
-            if (!!err) {
-                console.log('exec error: ' + err);
-            }
-        });
-
-        child;
-        res();
-    })
+        
 }
 
 const rl = readline.createInterface({
@@ -97,7 +128,7 @@ const question2 = () => {
 const question3 = () => {
   credentials.push("");
   return new Promise((resolve, reject) => {
-    rl.question('To initialize a Github repository you will need a personal access token. Do you wish to proceed with initializing a GitHub?: ', (answer) => {
+    rl.question('To initialize a Github repository you will need a personal access token. Do you wish to proceed without initializing a GitHub repository?: ', (answer) => {
       credentials.push(answer);
       resolve();
     });
@@ -129,11 +160,13 @@ const main = async () => {
     rl.stdoutMuted =true;
     await question2();
     await createGitRepo();
-    await createApp(true);
+    createApp(true);
+    countdown.stop();
   } else {
     await question3();
     if(credentials[2].includes('y')){
         createApp(false);
+        countdown.stop();
     }else{
         console.log('Please try again with a personal access token.')
     }
