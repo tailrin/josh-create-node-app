@@ -98,7 +98,6 @@ const createApp = async (gitRepo) => {
         runBashCommand(cmd[2])
       }).then(() => res())
     }
-    
   })
 }
 
