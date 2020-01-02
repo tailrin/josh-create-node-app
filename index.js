@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-
+const clear = require('clear');
+const open = require('open');
 const exec = require('child_process').exec;
 const fs = require('fs');
 const clui = require('clui');
@@ -15,9 +16,10 @@ const name = process.argv[2];
 const gitUrl = [];
 const readline = require('readline');
 const Progress = clui.Progress;
-const Spinner = clui.Spinner;
+const fetch = require('node-fetch');
+const gitUrl = []
 let progressBar = new Progress(20)
-let countdown = new Spinner(progressBar.update(0.0), ['◜','◠','◝','◞','◡','◟']);
+clear()
 const pack = `{\n  "name": "${name}",\n  "version": "1.0.0",\n  "description": "",\n  "main": "index.js",\n  "scripts": {\n    "test": "mocha --require test/setup.js",\n    "dev": "nodemon src/server.js",\n    "start": "node src/server.js",\n    "predeploy": "npm audit",\n    "deploy": "git push heroku master"\n  },\n  "keywords": [],\n  "author": "",\n  "license": "ISC",\n  "dependencies": {\n    "cors": "^2.8.5",\n    "dotenv": "^8.2.0",\n    "express": "^4.17.1",\n    "helmet": "^3.21.2",\n    "morgan": "^1.9.1"\n  },\n  "devDependencies": {\n    "chai": "^4.2.0",\n    "mocha": "^6.2.2",\n    "nodemon": "^2.0.2",\n    "supertest": "^4.0.2"\n  }\n}\n`;
 
 const writeFile = (path, content) => {
@@ -47,38 +49,37 @@ const runBashCommand = async (cmd) =>{
   });
 }
 
-const createApp = async (gitRepo) => { 
-        createDir(name);
-        createDir(`${name}/src`);
-        createDir(`${name}/test`);
-        writeFile(`./${name}/src/app.js`, app);
-        writeFile(`./${name}/src/server.js`, server);
-        writeFile(`./${name}/test/app.spec.js`, spec);
-        writeFile(`./${name}/test/setup.js`, setup);
-        writeFile(`./${name}/.env`, env);
-        writeFile(`./${name}/.gitignore`, ignore);
-        writeFile(`./${name}/package.json`, pack);
-        writeFile(`./${name}/Procfile`, proc);
-        writeFile(`./${name}/README.md`, md);
-        countdown.message(progressBar.update(0.05))
 
-        const cmd =[`npm i`, `git init`, `git add .`, `git commit -m "initial commit"`]
-        countdown.message(progressBar.update(0.083))
-        runBashCommand(cmd[0])
-        if(gitRepo){
-          cmd.push(`git remote add origin ${gitUrl[0]}`);
-          cmd.push('git push -u origin master')
-          runBashCommand(cmd[1])
-          .then(() => runBashCommand(cmd[2]))
-          .then(() => runBashCommand(cmd[3]))
-          .then(() => runBashCommand(cmd[4]))
-          .then(() => runBashCommand(cmd[5]))
-        } else {
-          runBashCommand(cmd[1])
-          .then(() => runBashCommand(cmd[2]))
-          .then(() => runBashCommand(cmd[3]))
-        }
-        
+
+const createApp = async (gitRepo) => { 
+  console.log(`Creating files and folders: ${progressBar.update(0.03)}`)
+  createDir(name);
+  createDir(`${name}/src`);
+  createDir(`${name}/test`);
+  writeFile(`./${name}/src/app.js`, app);
+  writeFile(`./${name}/src/server.js`, server);
+  writeFile(`./${name}/test/app.spec.js`, spec);
+  writeFile(`./${name}/test/setup.js`, setup);
+  writeFile(`./${name}/.env`, env);
+  writeFile(`./${name}/.gitignore`, ignore);
+  writeFile(`./${name}/package.json`, pack);
+  writeFile(`./${name}/Procfile`, proc);
+  writeFile(`./${name}/README.md`, md);
+  console.log(`Done creating files and folders: ${progressBar.update(0.05)}`)
+  const cmd =[`git init`, `git add .`, `git commit -m "initial commit"`]
+  if(gitRepo){
+    cmd.push(`git remote add origin ${gitUrl[0]}`);
+    cmd.push('git push -u origin master')
+  }
+  let counter = 0.05
+  let interval = setInterval(() => {
+    counter += 0.02
+    clear();
+    console.log(`Installing dependancies: ${progressBar.update(counter)}`)
+  }, 500)
+  runBashCommand('npm i').then(() => clearInterval(interval))
+  runBashCommand(cmd.join(' && '))
+
 }
 
 const rl = readline.createInterface({
@@ -86,38 +87,11 @@ const rl = readline.createInterface({
   output: process.stdout
 })
 
-rl._writeToOutput = (stringToWrite) => {
-    if (rl.stdoutMuted && !stringToWrite.includes('What is your GitHub'))
-      rl.output.write("*");
-    else
-      rl.output.write(stringToWrite);
-};
-
 const credentials = [];
 
 const question1 = () => {
   return new Promise((resolve, reject) => {
-    rl.question('Do you have a GitHub personal access token: ', (answer) => {
-      credentials.push(answer);
-      resolve();
-    });
-  });
-}
-
-
-const question2 = () => {
-  return new Promise((resolve, reject) => {
-    rl.question('What is your GitHub access token?: ', (answer) => {
-      credentials.push(answer);
-      resolve();
-    });
-  });
-}
-
-const question3 = () => {
-  credentials.push("");
-  return new Promise((resolve, reject) => {
-    rl.question('To initialize a Github repository you will need a personal access token. Do you wish to proceed without initializing a GitHub repository?: ', (answer) => {
+    rl.question('Do you want to create a GitHub repo and link it to the local repo?: ', (answer) => {
       credentials.push(answer);
       resolve();
     });
@@ -125,49 +99,34 @@ const question3 = () => {
 }
 
 const createGitRepo = () => {
-    return new Promise((res, rej) => {
-        exec(`curl -H "Authorization: token ${credentials[1]}" --data '{"name":"${name}"}' https://api.github.com/user/repos`, (err, stdout, stderr) => {
-            if (err) {
-                //some err occurred
-                console.error(err);
-            } else {
-                // the *entire* stdout and stderr (buffered)
-                const response = JSON.parse(stdout);
-                gitUrl.push(response.clone_url);
-                console.log(`stdout: ${stdout}`);
-                console.log(`stderr: ${stderr}`);
-
-            }
-            res();
-        });
-    })
+    return new Promise((resolve, reject) => {
+      open(`http://localhost:3500/?appName=${name}`);
+      fetch('http://localhost:3500/get-git-url').then(res => res.json()).then(res => {
+        gitUrl.push(res);
+        resolve();
+      })
+    });
 }
 
 const main = async () => {
   await question1();
   if(credentials[0].includes('y')){
-    rl.stdoutMuted =true;
-    await question2();
     await createGitRepo();
+    rl.close();
+    clear();
     createApp(true);
-    countdown.stop();
   } else {
-    await question3();
-    if(credentials[2].includes('y')){
-        createApp(false);
-        countdown.stop();
-    }else{
-        console.log('Please try again with a personal access token.')
-    }
-  }
-  rl.close()
-}
-if(!!name){
-    main()
-}else{
-    console.log('Please provide a name for the app.\n Usage: npx josh-create-node-app YOUR-APP-NAME-HERE')
+    rl.close();
+    clear()
+    createApp(false);
+  }  
 }
 
+if(!!name){
+  main()
+}else{
+  console.log('Please provide a name for the app.\n Usage: npx josh-create-node-app YOUR-APP-NAME-HERE')
+}
 
 
 
