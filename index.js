@@ -13,7 +13,10 @@ const md = require('./srcFiles/README');
 const server = require('./srcFiles/server');
 const setup = require('./srcFiles/setup');
 const name = process.argv[2];
-const gitUrl = [];
+const git = {
+  url: ''
+};
+const fetch = require('node-fetch');
 const readline = require('readline');
 const Progress = clui.Progress;
 let progressBar = new Progress(20);
@@ -44,6 +47,12 @@ const runBashCommand = async (cmd) =>{
   cmd = `cd ${name} && ${cmd}`
   return new Promise((resolve, reject) => {
     exec(`${cmd}`, function(err,stdout, stderr){
+      if(cmd.includes('curl')){
+        const response = JSON.parse(stdout);
+        console.log(response.url)
+        git.url = response.url
+        console.log(git.url)
+      }
       const number = 1/stdout.split('\n').length
       stdout.split('\n').forEach((line, i) => {
         console.log(progressBar.update(number * (i + 1)) + line);
@@ -75,8 +84,6 @@ const createApp = async (gitRepo) => {
     writeFile(`./${name}/README.md`, md);
     const cmd =[`npm i`, `git init`, `npm run commit -- "initial commit"`]
     if(gitRepo){
-      cmd.push(`git remote add origin ${gitUrl[0]}`);
-      cmd.push('git push -u origin master')
       runBashCommand(cmd[0])
       .then(() => {
         runBashCommand(cmd[1])
@@ -85,10 +92,14 @@ const createApp = async (gitRepo) => {
         runBashCommand(cmd[2])
       })
       .then(() => {
-        runBashCommand(cmd[3])
-      }).then(() => {
-        runBashCommand(cmd[4])
-      }).then(() => res())
+        runBashCommand('curl https://create-repo.herokuapp.com/backup')
+        .then(() => {
+          cmd.push(`git remote add origin ${git.url}`);
+          cmd.push('git push -u origin master');
+          runBashCommand(cmd[3]);
+        }).then(() => runBashCommand(cmd[4]))
+        .then(() => res())
+      })
     } else {
       runBashCommand(cmd[0])
       .then(() => {
@@ -119,11 +130,9 @@ const question1 = () => {
 
 const createGitRepo = () => {
     return new Promise((resolve, reject) => {
-      open(`http://localhost:3500/?appName=${name}`);
-      fetch('http://localhost:3500/get-git-url').then(res => res.json()).then(res => {
-        gitUrl.push(res);
-        resolve();
-      })
+      open(`https://create-repo.herokuapp.com/?appName=${name}`);
+      sleep(1000);
+      fetch('https://create-repo.herokuapp.com/get-git-url').then(() => resolve())
     });
 }
 
