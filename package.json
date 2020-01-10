@@ -1,6 +1,6 @@
 {
   "name": "josh-create-node-app",
-  "version": "0.0.8",
+  "version": "0.1.2",
   "bin": "index.js",
   "description": "Create a basic express server boilerplate",
   "main": "index.js",

@@ -49,9 +49,7 @@ const runBashCommand = async (cmd) =>{
     exec(`${cmd}`, function(err,stdout, stderr){
       if(cmd.includes('curl')){
         const response = JSON.parse(stdout);
-        console.log(response.url)
         git.url = response.url
-        console.log(git.url)
       }
       const number = 1/stdout.split('\n').length
       stdout.split('\n').forEach((line, i) => {
@@ -128,6 +126,14 @@ const question1 = () => {
   });
 }
 
+const question2 = () => {
+  return new Promise((resolve, reject) => {
+    rl.question('Press enter key to continue', (answer) => {
+      resolve();
+    });
+  });
+}
+
 const createGitRepo = () => {
     return new Promise((resolve, reject) => {
       open(`https://create-repo.herokuapp.com/?appName=${name}`);
@@ -140,12 +146,13 @@ const main = async () => {
   await question1();
   if(credentials[0].includes('y')){
     await createGitRepo();
-    rl.close();
     clear();
+    await question2();
+    rl.close();
     createApp(true);
   } else {
     rl.close();
-    clear()
+    clear();
     createApp(false);
   }  
 }
