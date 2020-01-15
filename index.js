@@ -55,7 +55,7 @@ const runBashCommand = async (cmd) =>{
       stdout.split('\n').forEach((line, i) => {
         console.log(progressBar.update(number * (i + 1)) + line);
         sleep(333)
-        //clear()
+        clear()
       })
       if (!!err) {
         console.log('exec error: ' + err);
@@ -127,7 +127,7 @@ const main = async () => {
   await question1();
   if(credentials[0].includes('y')){
     await createGitRepo();
-    //clear();
+    clear();
     rl.close();
     createApp(true)
     .then(() => runBashCommand('curl https://create-repo.herokuapp.com/backup'))
@@ -135,7 +135,7 @@ const main = async () => {
     .then(() => runBashCommand('git push -u origin master'))
   } else {
     rl.close();
-    //clear();
+    clear();
     createApp(false);
   }  
 }
