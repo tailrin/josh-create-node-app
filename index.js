@@ -55,7 +55,7 @@ const runBashCommand = async (cmd) =>{
       stdout.split('\n').forEach((line, i) => {
         console.log(progressBar.update(number * (i + 1)) + line);
         sleep(333)
-        clear()
+        //clear()
       })
       if (!!err) {
         console.log('exec error: ' + err);
@@ -66,7 +66,7 @@ const runBashCommand = async (cmd) =>{
   });
 }
 
-const createApp = async (gitRepo) => {
+const createApp = async () => {
   return new Promise((res, rej) => {
     createDir(name);
     createDir(`${name}/src`);
@@ -81,32 +81,13 @@ const createApp = async (gitRepo) => {
     writeFile(`./${name}/Procfile`, proc);
     writeFile(`./${name}/README.md`, md);
     const cmd =[`npm i`, `git init`, `npm run commit -- "initial commit"`]
-    if(gitRepo){
-      runBashCommand(cmd[0])
-      .then(() => {
-        runBashCommand(cmd[1])
-      })
-      .then(() => {
-        runBashCommand(cmd[2])
-      })
-      .then(() => {
-        runBashCommand('curl https://create-repo.herokuapp.com/backup')
-        .then(() => {
-          cmd.push(`git remote add origin ${git.url}`);
-          cmd.push('git push -u origin master');
-          runBashCommand(cmd[3]);
-        }).then(() => runBashCommand(cmd[4]))
-        .then(() => res())
-      })
-    } else {
-      runBashCommand(cmd[0])
-      .then(() => {
-        runBashCommand(cmd[1])
-      })
-      .then(() => {
-        runBashCommand(cmd[2])
-      }).then(() => res())
-    }
+    runBashCommand(cmd[0])
+    .then(() => {
+      runBashCommand(cmd[1])
+    })
+    .then(() => {
+      runBashCommand(cmd[2])
+    }).then(() => res())
   })
 }
 
@@ -135,9 +116,9 @@ const question2 = () => {
 }
 
 const createGitRepo = () => {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
       open(`https://create-repo.herokuapp.com/?appName=${name}`);
-      sleep(1000);
+      await question2();
       fetch('https://create-repo.herokuapp.com/get-git-url').then(() => resolve())
     });
 }
@@ -146,13 +127,15 @@ const main = async () => {
   await question1();
   if(credentials[0].includes('y')){
     await createGitRepo();
-    clear();
-    await question2();
+    //clear();
     rl.close();
-    createApp(true);
+    createApp(true)
+    .then(() => runBashCommand('curl https://create-repo.herokuapp.com/backup'))
+    .then(() => runBashCommand(`git remote add origin ${git.url}`))
+    .then(() => runBashCommand('git push -u origin master'))
   } else {
     rl.close();
-    clear();
+    //clear();
     createApp(false);
   }  
 }
